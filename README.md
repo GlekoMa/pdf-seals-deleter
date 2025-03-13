@@ -13,4 +13,3 @@ MuPDF is licensed under the [GNU Affero General Public License v3 (AGPL-3.0)](ht
 In compliance with the AGPL-3.0 license, we have made the full source code of this project publicly available, including all relevant modifications.
 
 MuPDF is copyrighted by [Artifex Software](https://www.artifex.com/).
-"# pdf-seals-deleter" 
