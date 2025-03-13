@@ -1,0 +1,18 @@
+# License Information
+
+## My Code License (Unlicense)
+This is free and unencumbered software released into the public domain.
+
+Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means.
+
+For more information, please refer to <https://unlicense.org/>.
+
+## Third-Party Dependencies
+This project includes MuPDF, which is licensed under the GNU Affero General Public License v3 (AGPL-3.0).
+
+MuPDF Copyright (C) 2006-2024 Artifex Software, Inc.  
+Source: https://mupdf.com/  
+License: https://www.gnu.org/licenses/agpl-3.0.html  
+
+### Compliance with AGPL-3.0
+Since this project includes MuPDF, **any distribution of this software must comply with the AGPL-3.0 requirements**, meaning that if you distribute a compiled binary that includes MuPDF, you must provide the full source code of the entire project (including your own code), even if your own code is under Unlicense.

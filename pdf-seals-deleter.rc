@@ -1,0 +1,3 @@
+#include "open_source.h"
+1 ICON "pdf-seals-deleter.ico"
+IDR_SOURCECODE RCDATA "source.zip"
