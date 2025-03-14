@@ -15,15 +15,6 @@
 #define EXE_NAME "pdf-seals-deleter"
 #define BUFSIZE 4096
 
-char* strncpy_elf(char* dest, char* src, int n)
-{
-    char* dest_bak = dest;
-    while(n-- > 0 && (*dest++ = *src++))
-        ;
-    *dest = '\0';
-    return dest_bak;
-}
-
 char* get_path_with_logo(char* input)
 {
     char* pdf_pos = strstr(input, ".pdf");
@@ -32,7 +23,7 @@ char* get_path_with_logo(char* input)
 
     char* output = (char*)malloc(new_len * sizeof(char));
 
-    strncpy_elf(output, input, prefix_len);
+    strncpy(output, input, prefix_len);
     output[prefix_len] = '\0';
     strcat(output, "_without_seals.pdf");
 
