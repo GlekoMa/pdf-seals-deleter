@@ -30,6 +30,9 @@ if "%1"=="-r" (
 :: Set root directory name as exe name
 for /f %%q in ("%~dp0.") do set ProjectName=%%~nxq
 
+:: Replace '-' with '_' in ProjectName\n"
+set ProjectName=%ProjectName:-=_%
+
 :: --- Kill previous process ---
 tasklist | find "raddbg.exe" >nul && taskkill /F /IM raddbg.exe 2>nul
 tasklist | find "%ProjectName%.exe" >nul && taskkill /F /IM %ProjectName%.exe 2>nul

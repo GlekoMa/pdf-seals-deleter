@@ -6,129 +6,22 @@
 #pragma comment(lib, "libmupdf")
 
 #include <windows.h>
-#include <commdlg.h>
-#include <shlwapi.h>
 #include <shellapi.h>
-#include <winreg.h>
-#include <winuser.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <locale.h>
+#include <shlwapi.h>
 #include "pdf_drop_seals.h"
 #include "open_source.h"
+#include "context_menu.h"
 
+#define EXE_NAME "pdf-seals-deleter"
 #define BUFSIZE 4096
-#define KEYSIZE 128
-// #define assert(cond) do { if (!(cond)) __debugbreak(); } while (0)
 
-char g_subkey_file[KEYSIZE] = "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\";
-char g_fixed_exe_path[MAX_PATH] = { 0 };
-
-void get_fixed_exe_path()
+char* strncpy_elf(char* dest, char* src, int n)
 {
-    char* appdata_path = getenv("APPDATA");
-    strcpy(g_fixed_exe_path, appdata_path);
-    strcat(g_fixed_exe_path, "\\pdf-seals-deleter\\pdf-seals-deleter.exe");
-}
-
-void copy_to_fixed_location(char* src_path)
-{
-    char dir_path[MAX_PATH];
-    strcpy(dir_path, g_fixed_exe_path);
-    PathRemoveFileSpecA(dir_path);
-
-    // First recursively delete the target directory if it exists
-    if (PathFileExistsA(dir_path)) {
-        // Prepare SHFILEOPSTRUCT for deletion
-        char del_path[MAX_PATH + 2]; // +2 for double null termination
-        strcpy(del_path, dir_path);
-        del_path[strlen(dir_path) + 1] = 0; // Double null terminate
-        
-        SHFILEOPSTRUCTA file_op = {
-            NULL,
-            FO_DELETE,
-            del_path,
-            NULL,
-            FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
-            FALSE,
-            NULL,
-            NULL
-        };
-        
-        // Perform the deletion
-        SHFileOperationA(&file_op);
-    }
-
-    // Create the directory and copy the file
-    CreateDirectoryA(dir_path, NULL);
-    CopyFileA(src_path, g_fixed_exe_path, FALSE);
-}
-
-void add_context_menu(char* key_name, char* menu_name, char* subkey)
-{
-    HKEY key;
-
-    char subkey_tmp[KEYSIZE];
-    strcpy(subkey_tmp, subkey);
-
-    // Ensure HKEY_CURRENT_USER\SOFTWARE\Classes\.pdf\shell exist
-    DWORD disposition;
-    RegCreateKeyExA(HKEY_CURRENT_USER, subkey_tmp, 0, NULL, 
-                    REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &key, &disposition);
-    RegCloseKey(key);
-
-    // Create key
-    strcat(subkey_tmp, key_name);
-    assert(RegCreateKeyA(HKEY_CURRENT_USER, subkey_tmp, &key) == ERROR_SUCCESS);
-
-    // Convert menu name to system encoding (for none-utf8-encode system)
-    int menu_name_len = MultiByteToWideChar(CP_UTF8, 0, menu_name, -1, NULL, 0);
-    wchar_t* menu_name_wide = (wchar_t*)malloc(menu_name_len * sizeof(wchar_t));
-    MultiByteToWideChar(CP_UTF8, 0, menu_name, -1, menu_name_wide, menu_name_len);
-
-    int menu_name_ansi_len = WideCharToMultiByte(CP_ACP, 0, menu_name_wide, -1, NULL, 0, NULL, NULL);
-    char* menu_name_ansi = (char*)malloc(menu_name_ansi_len);
-    WideCharToMultiByte(CP_ACP, 0, menu_name_wide, -1, menu_name_ansi, menu_name_ansi_len, NULL, NULL);
-
-    // Set menu name with system encoding
-    RegSetValueExA(key, NULL, 0, REG_SZ, (BYTE*)menu_name_ansi, (DWORD)(strlen(menu_name_ansi) + 1));
-
-    free(menu_name_wide);
-    free(menu_name_ansi);
-
-    // Set the icon
-    RegSetValueExA(key, "Icon", 0, REG_SZ, (BYTE*)g_fixed_exe_path, (DWORD)(strlen(g_fixed_exe_path) + 1));
-    RegCloseKey(key);
-
-    // Create sub command key
-    char subkey_command[KEYSIZE + 8]; // the length of "\command" is 8
-    strcpy(subkey_command, subkey_tmp);
-    strcat(subkey_command, "\\command");
-    assert(RegCreateKeyA(HKEY_CURRENT_USER, subkey_command, &key) == ERROR_SUCCESS);
-
-    // Set sub command key value
-    char command[MAX_PATH + 7] = "\""; // the length of "\"\" \"%%1\"" is 7
-    strcat(command, g_fixed_exe_path);
-    strcat(command, "\" \"%1\"");
-    RegSetValueExA(key, NULL, 0, REG_SZ, (BYTE*)command, (DWORD)(strlen(command) + 1));
-    RegCloseKey(key);
-}
-
-void remove_context_menu(char* key_name, char* subkey) 
-{
-    char subkey_tmp[KEYSIZE];
-    strcpy(subkey_tmp, subkey);
-    strcat(subkey_tmp, key_name);
-    char subkey_command[KEYSIZE + 8]; // the length of "\command" is 8
-    strcpy(subkey_command, subkey_tmp);
-    strcat(subkey_command, "\\command");
-
-    HKEY hKey;
-    if (RegOpenKeyExA(HKEY_CURRENT_USER, subkey_tmp, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        assert(RegDeleteKeyA(HKEY_CURRENT_USER, subkey_command) == ERROR_SUCCESS);
-        assert(RegDeleteKeyA(HKEY_CURRENT_USER, subkey_tmp) == ERROR_SUCCESS);
-    }
+    char* dest_bak = dest;
+    while(n-- > 0 && (*dest++ = *src++))
+        ;
+    *dest = '\0';
+    return dest_bak;
 }
 
 char* get_path_with_logo(char* input)
@@ -139,16 +32,17 @@ char* get_path_with_logo(char* input)
 
     char* output = (char*)malloc(new_len * sizeof(char));
 
-    strncpy(output, input, prefix_len);
+    strncpy_elf(output, input, prefix_len);
     output[prefix_len] = '\0';
     strcat(output, "_without_seals.pdf");
 
     return output;
 }
 
-void pop_message_box()
+void pop_message_box(char* fixed_exe_path)
 {
     // Popup a message box to require user to confirm if kill these processes
+    char subkey_file[] = "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\";
     LANGID langID = GetUserDefaultUILanguage();
     int result = (PRIMARYLANGID(langID) == LANG_CHINESE) ?
                  MessageBoxW(NULL, 
@@ -186,22 +80,22 @@ void pop_message_box()
         // Get current exe path and copy to fixed location
         char exe_path[MAX_PATH];
         GetModuleFileNameA(NULL, exe_path, MAX_PATH);
-        copy_to_fixed_location(exe_path);
+        copy_to_fixed_location(exe_path, fixed_exe_path);
         // Add fixed exe path to context menu
         char* menu_text = (PRIMARYLANGID(langID) == LANG_CHINESE) ? "消除水印" : "Remove seals";
-        add_context_menu("pdf-seals-deleter", menu_text, g_subkey_file);
+        add_context_menu(EXE_NAME, menu_text, subkey_file, fixed_exe_path);
     } else if (result == IDNO) {
         // Delete exe of fixed location
-        if (PathFileExistsA(g_fixed_exe_path)) {
-            DeleteFileA(g_fixed_exe_path);
+        if (PathFileExistsA(fixed_exe_path)) {
+            DeleteFileA(fixed_exe_path);
             // Delete parent directory (if is empty)
             char dir_path[MAX_PATH];
-            strcpy(dir_path, g_fixed_exe_path);
+            strcpy(dir_path, fixed_exe_path);
             PathRemoveFileSpecA(dir_path);
             RemoveDirectoryA(dir_path);
         }
         // Remove context menu
-        remove_context_menu("pdf-seals-deleter", g_subkey_file);
+        remove_context_menu(EXE_NAME, subkey_file);
     }
 }
 
@@ -230,9 +124,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
     RegisterClassW(&wc);
 
-    // Get fixed exe path (fill g_fixed_exe_path)
-    get_fixed_exe_path();
-
     // If run by context menu, delete seals
     if (*lpCmdLine) {
         char cmd_line[MAX_PATH] = { 0 };
@@ -246,7 +137,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
             pdf_drop_seals(pdf_path, output_path);
         }
     } else {
-        pop_message_box();
+        char fixed_exe_path[MAX_PATH] = { 0 };
+        get_fixed_exe_path(EXE_NAME, fixed_exe_path);
+        pop_message_box(fixed_exe_path);
     }
 
     ExitProcess(0);
