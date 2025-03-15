@@ -42,7 +42,9 @@ void pop_message_box(char* fixed_exe_path)
                      L"    否（NO）：删除上下文菜单；\n"
                      L"    取消（Cancel）：不作为，直接退出。\n"
                      L"---------------\n"
-                     L"命令行以参数 `--source` 运行查看依赖、许可证以及源码。",
+                     L"命令行以参数 `--source` 运行查看依赖、许可证以及源码。\n"
+                     L"---------------\n"
+                     L"版本：2025-3-15\n",
                      L"使用说明", MB_YESNOCANCEL | MB_TOPMOST) : 
                  MessageBoxW(NULL, 
                      L"This software provides a command for the file explorer context menu to remove watermarks from PDF files. "
@@ -58,7 +60,9 @@ void pop_message_box(char* fixed_exe_path)
                      L"    No (NO): Remove context menu;\n"
                      L"    Cancel: Do nothing and exit.\n"
                      L"---------------\n"
-                     L"Run the command line with the parameter --source to view dependencies, licenses, and source code.",
+                     L"Run the command line with the parameter --source to view dependencies, licenses, and source code.\n"
+                     L"---------------\n"
+                     L"Version: 2025-3-15",
                      L"Usage Instructions", MB_YESNOCANCEL | MB_TOPMOST);
     if (result == IDYES) {
         // Get current exe path and copy to fixed location
