@@ -15,19 +15,12 @@
 #define EXE_NAME "pdf-seals-deleter"
 #define BUFSIZE 4096
 
-char* get_path_with_logo(char* input)
+void get_path_with_logo(char* input, char* output)
 {
     char* pdf_pos = strstr(input, ".pdf");
     int prefix_len = (int)(pdf_pos - input);
-    int new_len = prefix_len + (int)strlen("_without_seals.pdf") + 1;
-
-    char* output = (char*)malloc(new_len * sizeof(char));
-
     strncpy(output, input, prefix_len);
-    output[prefix_len] = '\0';
     strcat(output, "_without_seals.pdf");
-
-    return output;
 }
 
 void pop_message_box(char* fixed_exe_path)
@@ -124,7 +117,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
         } else {
             cmd_line[strlen(cmd_line)-1] = '\0';
             char* pdf_path = cmd_line+1;
-            char* output_path = get_path_with_logo(pdf_path);
+            char output_path[MAX_PATH] = { 0 };
+            get_path_with_logo(pdf_path, output_path);
             pdf_drop_seals(pdf_path, output_path);
         }
     } else {
